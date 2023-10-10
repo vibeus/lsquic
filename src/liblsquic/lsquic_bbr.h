@@ -186,6 +186,8 @@ struct lsquic_bbr
     lsquic_time_t               bbr_min_rtt;
     lsquic_time_t               bbr_min_rtt_timestamp;
 
+    struct minmax               bbr_relative_min_rtt;
+
     // A window used to limit the number of bytes in flight during loss recovery
     uint64_t                    bbr_recovery_window;
 

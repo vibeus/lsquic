@@ -3570,4 +3570,12 @@ lsquic_engine_retire_cid (struct lsquic_engine_public *enpub,
     LSQ_DEBUGC("retire CID %"CID_FMT, CID_BITS(&cce->cce_cid));
 }
 
-
+#if LSQUIC_CONN_STATS
+struct conn_stats*
+lsquic_engine_get_stats(lsquic_engine_t *engine, struct lsquic_stream* stream)
+{
+    struct lsquic_conn* conn = lsquic_stream_conn(stream);
+    engine->conn_stats_sum = *(conn->cn_if->ci_get_stats(conn));
+    return &engine->conn_stats_sum;
+}
+#endif

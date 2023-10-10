@@ -11,7 +11,7 @@
  */
 
 #include <stdarg.h>
-#include <lsquic_types.h>
+#include "lsquic_types.h"
 #ifndef WIN32
 #include <sys/uio.h>
 #include <time.h>
@@ -268,9 +268,9 @@ typedef struct ssl_ctx_st * (*lsquic_lookup_cert_f)(
                                             ~LSQUIC_DEPRECATED_VERSIONS & \
                                             ~LSQUIC_EXPERIMENTAL_VERSIONS)
 
-#define LSQUIC_DF_CFCW_SERVER      (3 * 1024 * 1024 / 2)
+#define LSQUIC_DF_CFCW_SERVER      (6 * 1024 * 1024 / 2)
 #define LSQUIC_DF_CFCW_CLIENT      (15 * 1024 * 1024)
-#define LSQUIC_DF_SFCW_SERVER      (1 * 1024 * 1024)
+#define LSQUIC_DF_SFCW_SERVER      (2 * 1024 * 1024)
 #define LSQUIC_DF_SFCW_CLIENT      (6 * 1024 * 1024)
 #define LSQUIC_DF_MAX_STREAMS_IN   100
 
@@ -2136,6 +2136,42 @@ lsquic_ssl_to_conn (const struct ssl_st *);
 int
 lsquic_ssl_sess_to_resume_info (struct ssl_st *, struct ssl_session_st *,
                                         unsigned char **buf, size_t *buf_sz);
+#if LSQUIC_CONN_STATS
+struct conn_stats {
+    /* All counters are of the same type, unsigned long, because we cast the
+     * struct to an array to update the aggregate.
+     */
+    unsigned long           n_ticks;            /* How many time connection was ticked */
+    struct {
+        unsigned long       stream_data_sz;     /* Sum of all STREAM frames payload */
+        unsigned long       stream_frames;      /* Number of STREAM frames */
+        unsigned long       packets,            /* Incoming packets */
+                            undec_packets,      /* Undecryptable packets */
+                            dup_packets,        /* Duplicate packets */
+                            err_packets;        /* Error packets(?) */
+        unsigned long       n_acks,
+                            n_acks_proc,
+                            n_acks_merged;
+        unsigned long       bytes;              /* Overall bytes in */
+        unsigned long       headers_uncomp;     /* Sum of uncompressed header bytes */
+        unsigned long       headers_comp;       /* Sum of compressed header bytes */
+    }                   in;
+    struct {
+        unsigned long       stream_data_sz;
+        unsigned long       stream_frames;
+        unsigned long       acks;
+        unsigned long       packets;            /* Number of sent packets */
+        unsigned long       acked_via_loss;     /* Number of packets acked via loss record */
+        unsigned long       lost_packets;
+        unsigned long       retx_packets;       /* Number of retransmitted packets */
+        unsigned long       bytes;              /* Overall bytes out */
+        unsigned long       headers_uncomp;     /* Sum of uncompressed header bytes */
+        unsigned long       headers_comp;       /* Sum of compressed header bytes */
+    }                   out;
+};
+struct conn_stats *
+lsquic_engine_get_stats(lsquic_engine_t *engine, struct lsquic_stream* stream);
+#endif
 
 #ifdef __cplusplus
 }

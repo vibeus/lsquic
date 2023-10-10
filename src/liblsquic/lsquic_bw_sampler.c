@@ -250,6 +250,10 @@ lsquic_bw_sampler_packet_acked (struct bw_sampler *sampler,
     sample->rtt = rtt;
     sample->is_app_limited = is_app_limited;
 
+    if (sample->bandwidth.value < 4800000) {
+        sample->bandwidth.value = 4800000;
+    }
+
     LSQ_DEBUG("packet %"PRIu64" acked, bandwidth: %"PRIu64" bps",
                         packet_out->po_packno, BW_VALUE(&sample->bandwidth));
 

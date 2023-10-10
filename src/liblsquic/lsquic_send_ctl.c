@@ -509,7 +509,7 @@ set_retx_alarm (struct lsquic_send_ctl *ctl, enum packnum_space pns,
         delay = ctl->sc_loss_to;
         break;
     case RETX_MODE_TLP:
-        delay = calculate_tlp_delay(ctl);
+        delay = calculate_tlp_delay(ctl) + 35000;
         break;
     default:
         assert(rm == RETX_MODE_RTO);

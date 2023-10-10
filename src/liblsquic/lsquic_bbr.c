@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,7 +52,7 @@
 // Constants based on TCP defaults.
 // The minimum CWND to ensure delayed acks don't reduce bandwidth measurements.
 // Does not inflate the pacing rate.
-#define kDefaultMinimumCongestionWindow  (4 * kDefaultTCPMSS)
+#define kDefaultMinimumCongestionWindow  (8 * kDefaultTCPMSS)
 
 // The gain used for the STARTUP, equal to 2/ln(2).
 #define kDefaultHighGain 2.885f
@@ -168,8 +169,9 @@ init_bbr (struct lsquic_bbr *bbr)
 {
     bbr->bbr_mode = BBR_MODE_STARTUP;
     bbr->bbr_round_count = 0;
-    minmax_init(&bbr->bbr_max_bandwidth, 10);
-    minmax_init(&bbr->bbr_max_ack_height, 10);
+    minmax_init(&bbr->bbr_max_bandwidth, 20);
+    minmax_init(&bbr->bbr_max_ack_height, 20);
+    minmax_init(&bbr->bbr_relative_min_rtt, 10);
     bbr->bbr_aggregation_epoch_bytes = 0;
     bbr->bbr_aggregation_epoch_start_time = 0;
     bbr->bbr_min_rtt = 0;
@@ -439,9 +441,11 @@ update_bandwidth_and_min_rtt (struct lsquic_bbr *bbr)
 {
     struct bw_sample *sample, *next_sample;
     uint64_t sample_min_rtt;
+    uint64_t sample_max_rtt;
     int min_rtt_expired;
 
     sample_min_rtt = UINT64_MAX;
+    sample_max_rtt = UINT64_MAX;
     for (sample = TAILQ_FIRST(&bbr->bbr_ack_state.samples); sample;
                                                         sample = next_sample)
     {
@@ -458,6 +462,9 @@ update_bandwidth_and_min_rtt (struct lsquic_bbr *bbr)
         if (sample_min_rtt == UINT64_MAX || sample->rtt < sample_min_rtt)
             sample_min_rtt = sample->rtt;
 
+        if (sample_max_rtt == UINT64_MAX || sample->rtt > sample_max_rtt)
+            sample_max_rtt = sample->rtt;
+
         if (!sample->is_app_limited
                     || BW_VALUE(&sample->bandwidth)
                                     > minmax_get(&bbr->bbr_max_bandwidth))
@@ -470,12 +477,13 @@ update_bandwidth_and_min_rtt (struct lsquic_bbr *bbr)
     if (sample_min_rtt == UINT64_MAX)
         return 0;
 
+    minmax_upmin(&bbr->bbr_relative_min_rtt, bbr->bbr_round_count, sample_max_rtt);
     bbr->bbr_min_rtt_since_last_probe
                     = MIN(bbr->bbr_min_rtt_since_last_probe, sample_min_rtt);
 
     min_rtt_expired = bbr->bbr_min_rtt != 0 && (bbr->bbr_ack_state.ack_time
                                 > bbr->bbr_min_rtt_timestamp + kMinRttExpiry);
-    if (min_rtt_expired || sample_min_rtt < bbr->bbr_min_rtt
+    if (min_rtt_expired || minmax_get(&bbr->bbr_relative_min_rtt) > 10000/*10ms*/
                                                     || 0 == bbr->bbr_min_rtt)
     {
         if (min_rtt_expired && should_extend_min_rtt_expiry(bbr))
@@ -486,9 +494,11 @@ update_bandwidth_and_min_rtt (struct lsquic_bbr *bbr)
         }
         else
         {
-            LSQ_DEBUG("min rtt updated: %"PRIu64" -> %"PRIu64,
-                bbr->bbr_min_rtt, sample_min_rtt);
-            bbr->bbr_min_rtt = sample_min_rtt;
+            if (minmax_get(&bbr->bbr_relative_min_rtt) > 10000/*10ms*/) {
+                LSQ_DEBUG("min rtt updated: %"PRIu64" -> %"PRIu64,
+                        bbr->bbr_min_rtt, minmax_get(&bbr->bbr_relative_min_rtt));
+                bbr->bbr_min_rtt = minmax_get(&bbr->bbr_relative_min_rtt);
+            }
         }
         bbr->bbr_min_rtt_timestamp = bbr->bbr_ack_state.ack_time;
         bbr->bbr_min_rtt_since_last_probe = UINT64_MAX;
@@ -613,7 +623,13 @@ update_gain_cycle_phase (struct lsquic_bbr *bbr, uint64_t bytes_in_flight)
                 && kPacingGain[bbr->bbr_cycle_current_offset] == 1
                 && bytes_in_flight > get_target_cwnd(bbr, 1))
               return;
-        bbr->bbr_pacing_gain = kPacingGain[bbr->bbr_cycle_current_offset];
+        if (kPacingGain[bbr->bbr_cycle_current_offset] > 1) {
+            bbr->bbr_pacing_gain = 1.5 - 0.5 * pow(0.1, 0.25);
+        } else if (kPacingGain[bbr->bbr_cycle_current_offset] < 1) {
+            bbr->bbr_pacing_gain = 1.0 - 0.5 * pow(0.1, 4);
+        } else {
+            bbr->bbr_pacing_gain = kPacingGain[bbr->bbr_cycle_current_offset];
+        }
         LSQ_DEBUG("advanced gain cycle, pacing gain set to %.2f",
                                                         bbr->bbr_pacing_gain);
     }
@@ -1016,7 +1032,11 @@ lsquic_bbr_end_ack (void *cong_ctl, uint64_t in_flight)
                         bbr->bbr_round_count, bbr->bbr_current_round_trip_end);
         }
         min_rtt_expired = update_bandwidth_and_min_rtt(bbr);
-        update_recovery_state(bbr, is_round_start);
+        if (in_flight < kMaxSegmentSize && bbr->bbr_ack_state.has_losses) {
+            // LSQ_DEBUG("Escape update_recovery_state in_flight = %llu.", in_flight);
+        } else {
+            update_recovery_state(bbr, is_round_start);
+        }
         excess_acked = update_ack_aggregation_bytes(bbr, bytes_acked);
     }
     else
