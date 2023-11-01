@@ -3571,11 +3571,17 @@ lsquic_engine_retire_cid (struct lsquic_engine_public *enpub,
 }
 
 #if LSQUIC_CONN_STATS
+uint32_t previous_packet_num = 0;
 struct conn_stats*
 lsquic_engine_get_stats(lsquic_engine_t *engine, struct lsquic_stream* stream)
 {
     struct lsquic_conn* conn = lsquic_stream_conn(stream);
-    engine->conn_stats_sum = *(conn->cn_if->ci_get_stats(conn));
+    engine->conn_stats_sum.in.loss_rate = (float)(conn->cn_tracker.packet_number - previous_packet_num) / (float)(conn->cn_tracker.packet_num);
+    conn->cn_tracker.packet_number = previous_packet_num;
+    const struct conn_stats* stats = conn->cn_if->ci_get_stats(conn);
+    engine->conn_stats_sum.out.packets = stats->out.packets;
+    engine->conn_stats_sum.out.retx_packets = stats->out.retx_packets;
+    engine->conn_stats_sum.out.cwnd = lsquic_stream_send_ctl_cwnd(stream);
     return &engine->conn_stats_sum;
 }
 #endif

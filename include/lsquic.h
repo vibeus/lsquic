@@ -1823,6 +1823,8 @@ lsquic_stream_set_http_prio (lsquic_stream_t *,
  */
 lsquic_conn_t * lsquic_stream_conn(const lsquic_stream_t *s);
 
+uint64_t lsquic_stream_send_ctl_cwnd(const lsquic_stream_t *stream);
+
 /** Get connection ID */
 const lsquic_cid_t *
 lsquic_conn_id (const lsquic_conn_t *c);
@@ -2155,6 +2157,7 @@ struct conn_stats {
         unsigned long       bytes;              /* Overall bytes in */
         unsigned long       headers_uncomp;     /* Sum of uncompressed header bytes */
         unsigned long       headers_comp;       /* Sum of compressed header bytes */
+        float               loss_rate;
     }                   in;
     struct {
         unsigned long       stream_data_sz;
@@ -2167,6 +2170,7 @@ struct conn_stats {
         unsigned long       bytes;              /* Overall bytes out */
         unsigned long       headers_uncomp;     /* Sum of uncompressed header bytes */
         unsigned long       headers_comp;       /* Sum of compressed header bytes */
+        uint64_t            cwnd;
     }                   out;
 };
 struct conn_stats *

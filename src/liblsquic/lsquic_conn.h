@@ -104,6 +104,12 @@ struct to_coal
     size_t                           prev_sz_sum;
 };
 
+struct lsquic_recv_tracker
+{
+    uint32_t packet_num;
+    uint32_t packet_number;
+};
+
 struct conn_iface
 {
     enum tick_st
@@ -351,6 +357,7 @@ struct lsquic_conn
     unsigned char                cn_cces_mask;  /* Those that are set */
     unsigned char                cn_n_cces; /* Number of CCEs in cn_cces */
     unsigned char                cn_cur_cce_idx;
+    struct lsquic_recv_tracker   cn_tracker;
 #if LSQUIC_TEST
     struct conn_cid_elem         cn_cces_buf[8];
 #define LSCONN_INITIALIZER_CID(lsconn_, cid_) { \

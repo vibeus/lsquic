@@ -7537,6 +7537,9 @@ process_regular_packet (struct ietf_full_conn *conn,
 
     EV_LOG_PACKET_IN(LSQUIC_LOG_CONN_ID, packet_in);
 
+    conn->ifc_conn.cn_tracker.packet_num = conn->ifc_conn.cn_tracker.packet_num + 1;
+    conn->ifc_conn.cn_tracker.packet_number = packet_in->pi_packno;
+
     is_rechist_empty = lsquic_rechist_is_empty(&conn->ifc_rechist[pns]);
     st = lsquic_rechist_received(&conn->ifc_rechist[pns], packet_in->pi_packno,
                                                     packet_in->pi_received);

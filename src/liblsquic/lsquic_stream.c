@@ -4342,6 +4342,12 @@ lsquic_stream_conn (const lsquic_stream_t *stream)
     return stream->conn_pub->lconn;
 }
 
+uint64_t
+lsquic_stream_send_ctl_cwnd (const lsquic_stream_t *stream)
+{
+    return lsquic_send_ctl_cwnd(stream->conn_pub->send_ctl);
+}
+
 
 int
 lsquic_stream_close (lsquic_stream_t *stream)

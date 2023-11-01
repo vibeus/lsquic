@@ -1713,11 +1713,13 @@ send_ctl_can_send (struct lsquic_send_ctl *ctl)
         ctl->sc_conn_pub->conn_cap.cc_max);
     if (ctl->sc_flags & SC_PACE)
     {
-        if (n_out >= ctl->sc_ci->cci_get_cwnd(CGP(ctl)))
+        if (n_out >= ctl->sc_ci->cci_get_cwnd(CGP(ctl))) {
             return 0;
+        }
         if (lsquic_pacer_can_schedule(&ctl->sc_pacer,
-                               ctl->sc_n_scheduled + ctl->sc_n_in_flight_all))
+                               ctl->sc_n_scheduled + ctl->sc_n_in_flight_all)) {
             return 1;
+        }
         if (ctl->sc_flags & SC_SCHED_TICK)
         {
             ctl->sc_flags &= ~SC_SCHED_TICK;
@@ -1776,6 +1778,12 @@ send_ctl_could_send (const struct lsquic_send_ctl *ctl)
     cwnd = ctl->sc_ci->cci_get_cwnd(CGP(ctl));
     n_out = send_ctl_all_bytes_out(ctl);
     return n_out < cwnd;
+}
+
+uint64_t
+lsquic_send_ctl_cwnd (const struct lsquic_send_ctl *ctl)
+{
+    return ctl->sc_ci->cci_get_cwnd(CGP(ctl));
 }
 
 
