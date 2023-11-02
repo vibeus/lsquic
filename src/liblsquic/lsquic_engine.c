@@ -3579,6 +3579,9 @@ lsquic_engine_get_stats(lsquic_engine_t *engine, struct lsquic_stream* stream)
     engine->conn_stats_sum.in.loss_rate = (float)(conn->cn_tracker.packet_number - previous_packet_num) / (float)(conn->cn_tracker.packet_num);
     conn->cn_tracker.packet_number = previous_packet_num;
     const struct conn_stats* stats = conn->cn_if->ci_get_stats(conn);
+    engine->conn_stats_sum.out.bytes = stats->out.acks;;
+    engine->conn_stats_sum.out.bytes_acked = lsquic_stream_send_ctl_bytes_acked(stream);
+    engine->conn_stats_sum.out.acks = stats->out.acks;
     engine->conn_stats_sum.out.packets = stats->out.packets;
     engine->conn_stats_sum.out.retx_packets = stats->out.retx_packets;
     engine->conn_stats_sum.out.cwnd = lsquic_stream_send_ctl_cwnd(stream);

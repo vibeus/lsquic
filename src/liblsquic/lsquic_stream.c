@@ -4348,6 +4348,12 @@ lsquic_stream_send_ctl_cwnd (const lsquic_stream_t *stream)
     return lsquic_send_ctl_cwnd(stream->conn_pub->send_ctl);
 }
 
+uint64_t
+lsquic_stream_send_ctl_bytes_acked (const lsquic_stream_t *stream)
+{
+    return lsquic_send_ctl_bytes_acked(stream->conn_pub->send_ctl);
+}
+
 
 int
 lsquic_stream_close (lsquic_stream_t *stream)

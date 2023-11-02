@@ -47,7 +47,7 @@
 // Default maximum packet size used in the Linux TCP implementation.
 // Used in QUIC for congestion window computations in bytes.
 #define kDefaultTCPMSS 1460
-#define kMaxSegmentSize kDefaultTCPMSS
+#define kMaxSegmentSize (2 * kDefaultTCPMSS)
 
 // Constants based on TCP defaults.
 // The minimum CWND to ensure delayed acks don't reduce bandwidth measurements.

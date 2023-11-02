@@ -181,6 +181,9 @@ lsquic_send_ctl_can_send (lsquic_send_ctl_t *ctl);
 uint64_t
 lsquic_send_ctl_cwnd (const struct lsquic_send_ctl *ctl);
 
+uint64_t
+lsquic_send_ctl_bytes_acked (const struct lsquic_send_ctl *ctl);
+
 void
 lsquic_send_ctl_scheduled_one (lsquic_send_ctl_t *, struct lsquic_packet_out *);
 

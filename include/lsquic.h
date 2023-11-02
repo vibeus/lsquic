@@ -1825,6 +1825,8 @@ lsquic_conn_t * lsquic_stream_conn(const lsquic_stream_t *s);
 
 uint64_t lsquic_stream_send_ctl_cwnd(const lsquic_stream_t *stream);
 
+uint64_t lsquic_stream_send_ctl_bytes_acked (const lsquic_stream_t *stream);
+
 /** Get connection ID */
 const lsquic_cid_t *
 lsquic_conn_id (const lsquic_conn_t *c);
@@ -2168,6 +2170,7 @@ struct conn_stats {
         unsigned long       lost_packets;
         unsigned long       retx_packets;       /* Number of retransmitted packets */
         unsigned long       bytes;              /* Overall bytes out */
+        unsigned long       bytes_acked;        /* Overall bytes acked */
         unsigned long       headers_uncomp;     /* Sum of uncompressed header bytes */
         unsigned long       headers_comp;       /* Sum of compressed header bytes */
         uint64_t            cwnd;

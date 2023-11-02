@@ -1783,7 +1783,21 @@ send_ctl_could_send (const struct lsquic_send_ctl *ctl)
 uint64_t
 lsquic_send_ctl_cwnd (const struct lsquic_send_ctl *ctl)
 {
+    if (ctl->sc_conn_pub->conn_cap.cc_sent > ctl->sc_bytes_unacked_all) {
+        return ctl->sc_conn_pub->conn_cap.cc_sent - ctl->sc_bytes_unacked_all;
+    }
+
     return ctl->sc_ci->cci_get_cwnd(CGP(ctl));
+}
+
+uint64_t
+lsquic_send_ctl_bytes_acked (const struct lsquic_send_ctl *ctl)
+{
+    if (ctl->sc_conn_pub->conn_cap.cc_sent > ctl->sc_bytes_unacked_all) {
+        return ctl->sc_conn_pub->conn_cap.cc_sent - ctl->sc_bytes_unacked_all;
+    }
+
+    return 0;
 }
 
 
