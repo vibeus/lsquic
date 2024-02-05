@@ -2159,7 +2159,7 @@ struct conn_stats {
         unsigned long       bytes;              /* Overall bytes in */
         unsigned long       headers_uncomp;     /* Sum of uncompressed header bytes */
         unsigned long       headers_comp;       /* Sum of compressed header bytes */
-        float               loss_rate;
+        uint32_t            latest_packet_no;
     }                   in;
     struct {
         unsigned long       stream_data_sz;
