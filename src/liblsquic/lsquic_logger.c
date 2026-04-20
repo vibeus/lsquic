@@ -426,7 +426,7 @@ end:
 
 void
 lsquic_logger_init (const struct lsquic_logger_if *lif, void *lctx,
-                    unsigned llts)
+                    enum lsquic_logger_timestamp_style llts)
 {
     logger_if  = lif;
     logger_ctx = lctx;
