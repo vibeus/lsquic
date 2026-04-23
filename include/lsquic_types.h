@@ -24,13 +24,18 @@
 /**
  * Connection ID
  */
-typedef struct lsquic_cid
+typedef struct ALIGNED_(8) lsquic_cid
 {
     uint8_t     buf[MAX_CID_LEN];
 #define idbuf buf
     uint_fast8_t len;
-} ALIGNED_(8)
-lsquic_cid_t;
+#if defined(WIN32)
+    /* clang-cl does not add tail padding for this aligned struct once the
+     * Windows compat headers are in play, so make the 24-byte layout explicit.
+     */
+    uint8_t     pad[3];
+#endif
+} lsquic_cid_t;
 
 
 #define LSQUIC_CIDS_EQ(a, b) ((a)->len == 8 ? \
