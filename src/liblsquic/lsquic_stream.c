@@ -4354,6 +4354,13 @@ lsquic_stream_send_ctl_bytes_acked (const lsquic_stream_t *stream)
     return lsquic_send_ctl_bytes_acked(stream->conn_pub->send_ctl);
 }
 
+/* [PROBE] BBR max-bandwidth estimate (bits/sec) of the stream's connection. */
+uint64_t
+lsquic_stream_send_ctl_bbr_bw (const lsquic_stream_t *stream)
+{
+    return lsquic_send_ctl_bbr_max_bw(stream->conn_pub->send_ctl);
+}
+
 
 int
 lsquic_stream_close (lsquic_stream_t *stream)

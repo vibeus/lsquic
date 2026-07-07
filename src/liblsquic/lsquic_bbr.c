@@ -209,7 +209,16 @@ lsquic_bbr_init (void *cong_ctl, const struct lsquic_conn_public *conn_pub,
 {
     struct lsquic_bbr *const bbr = cong_ctl;
     bbr->bbr_conn_pub = conn_pub;
-    lsquic_bw_sampler_init(&bbr->bbr_bw_sampler, conn_pub->lconn, retx_frames);
+    /* [DATAGRAM] Include DATAGRAM frames in bandwidth sampling.  The sampler
+     * only tracks packets whose frames match this mask; with media riding
+     * unreliable DATAGRAM frames (not retransmittable), every media packet
+     * was skipped and BBR's max-bandwidth filter saw only handshake/control
+     * stream packets -- a bogus, tiny, deterministic estimate (measured:
+     * frozen at 4.8 Mbps regardless of the real link).  DATAGRAM-bearing
+     * packets are ACKed like any other packet, so delivery-rate sampling
+     * works for them; they simply are not retransmitted on loss. */
+    lsquic_bw_sampler_init(&bbr->bbr_bw_sampler, conn_pub->lconn,
+                           retx_frames | QUIC_FTBIT_DATAGRAM);
     bbr->bbr_rtt_stats = &conn_pub->rtt_stats;
 
     init_bbr(bbr);
@@ -789,6 +798,7 @@ lsquic_bbr_get_cwnd (void *cong_ctl)
         cwnd = MIN(bbr->bbr_cwnd, bbr->bbr_recovery_window);
     else
         cwnd = bbr->bbr_cwnd;
+
 
     return cwnd;
 }

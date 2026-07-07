@@ -1827,6 +1827,11 @@ uint64_t lsquic_stream_send_ctl_cwnd(const lsquic_stream_t *stream);
 
 uint64_t lsquic_stream_send_ctl_bytes_acked (const lsquic_stream_t *stream);
 
+/* [PROBE] BBR's bottleneck-bandwidth estimate for the stream's connection,
+ * in bits per second (max filter over delivery-rate samples).  0 if the
+ * congestion controller is not BBR. */
+uint64_t lsquic_stream_send_ctl_bbr_bw (const lsquic_stream_t *stream);
+
 /** Get connection ID */
 const lsquic_cid_t *
 lsquic_conn_id (const lsquic_conn_t *c);

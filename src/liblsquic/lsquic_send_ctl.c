@@ -1800,6 +1800,28 @@ lsquic_send_ctl_bytes_acked (const struct lsquic_send_ctl *ctl)
     return 0;
 }
 
+/* [PROBE] BBR's bottleneck-bandwidth estimate (bits per second): the max
+ * filter over per-ACK delivery-rate samples.  This is the transport's own
+ * measured link bandwidth, with proper app-limited accounting -- unlike
+ * lsquic_send_ctl_bytes_acked() above, which is a stream-flow-capacity value
+ * that stays 0 when media rides DATAGRAM frames (no stream bytes).
+ * Returns 0 when the congestion controller is not BBR. */
+uint64_t
+lsquic_send_ctl_bbr_max_bw (const struct lsquic_send_ctl *ctl)
+{
+    const struct lsquic_bbr *bbr;
+
+    if (ctl->sc_ci == &lsquic_cong_bbr_if)
+        bbr = &ctl->sc_adaptive_cc.acc_bbr;
+    else if (ctl->sc_ci == &lsquic_cong_adaptive_if
+                && !(ctl->sc_adaptive_cc.acc_flags & ACC_CUBIC))
+        bbr = &ctl->sc_adaptive_cc.acc_bbr;
+    else
+        return 0;
+
+    return minmax_get(&bbr->bbr_max_bandwidth);
+}
+
 
 void
 lsquic_send_ctl_maybe_app_limited (struct lsquic_send_ctl *ctl,
